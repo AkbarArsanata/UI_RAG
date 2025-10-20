@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BPS Portal</title>
+    <style>
+        :root {
+            --bg: #ffffff;
+            --surface: #ffffff;
+            --text: #0b0b0b;
+            --muted: #6b7280;
+            --primary: #000000;
+            /* utama hitam saat mode gelap */
+            --accent: #000000;
+            --radius: 10px;
+            --shadow: 0 6px 30px rgba(0, 0, 0, 0.08);
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            transition: background-color .25s, color .25s;
+        }
+
+        .main-container {
+            position: relative;
+            text-align: center;
+            padding: 2rem;
+            background-color: var(--surface);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            max-width: 720px;
+            width: 100%;
+        }
+
+        .main-title {
+            color: var(--primary);
+            margin-bottom: 1.4rem;
+        }
+
+        .nav-button {
+            display: inline-block;
+            margin: 0.5rem;
+            padding: 0.9rem 1.6rem;
+            font-size: 1.05rem;
+            color: var(--surface);
+            background-color: var(--primary);
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background-color .18s, transform .12s;
+        }
+
+        .nav-button:hover {
+            transform: translateY(-2px);
+        }
+
+        /* Theme toggle button */
+        .theme-toggle {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: transparent;
+            border: 2px solid var(--muted);
+            color: var(--muted);
+            padding: 6px 10px;
+            border-radius: 999px;
+            cursor: pointer;
+            font-weight: 700;
+            transition: background-color .18s, color .18s, border-color .18s;
+        }
+
+        .theme-toggle:focus {
+            outline: none;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+        }
+
+        /* Dark mode variables */
+        body.dark {
+            --bg: #0b0b0b;
+            --surface: #0b0b0b;
+            --text: #ffffff;
+            --muted: #cfcfcf;
+            --primary: #ffffff;
+            --accent: #ffffff;
+            --shadow: 0 8px 40px rgba(0, 0, 0, 0.6);
+        }
+
+        /* Responsive */
+        @media (max-width:600px) {
+            .main-container {
+                padding: 1.2rem;
+                border-radius: 14px;
+            }
+
+            .nav-button {
+                padding: 0.75rem 1rem;
+                font-size: 0.98rem;
+            }
+
+            .theme-toggle {
+                top: 10px;
+                right: 10px;
+                padding: 6px 8px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="main-container">
+        <button id="themeToggle" class="theme-toggle" aria-pressed="false" title="Toggle theme">🌙</button>
+        <h1 class="main-title">Selamat Datang di Portal BPS</h1>
+        <p>Pilih layanan yang ingin Anda akses:</p>
+        <a href="src/chat.html" class="nav-button">Chat dengan BPS Bot</a>
+        <a href="src/calendar.html" class="nav-button">Kalender Agenda</a>
+    </div>
+    <script>
+        (function () {
+            const btn = document.getElementById('themeToggle');
+            function applyState(isDark) {
+                document.body.classList.toggle('dark', isDark);
+                btn.textContent = isDark ? '☀️' : '🌙';
+                btn.setAttribute('aria-pressed', isDark ? 'true' : 'false');
+                localStorage.setItem('darkMode', '' + (isDark ? 'enabled' : 'disabled'));
+            }
+            // init
+            const saved = localStorage.getItem('darkMode');
+            applyState(saved === 'enabled');
+            btn.addEventListener('click', () => applyState(!document.body.classList.contains('dark')));
+        })();
+    </script>
+</body>
+
+</html>
