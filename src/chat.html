@@ -587,7 +587,41 @@
 
         // --- Chat Logic ---
         // Muat riwayat dari localStorage saat halaman dimuat
-        let chatHistory = JSON.parse(localStorage.getItem('chatHistory')) || [];
+        // Konversi format lama [sender, text] ke format baru {sender: "...", text: "..."} jika perlu
+        let rawStoredHistory = localStorage.getItem('chatHistory');
+        let chatHistory = [];
+
+        if (rawStoredHistory) {
+            try {
+                const parsed = JSON.parse(rawStoredHistory);
+                if (Array.isArray(parsed)) {
+                    // Cek apakah formatnya adalah array object {sender, text}
+                    if (parsed.length > 0 && typeof parsed[0] === 'object' && parsed[0] !== null && 'sender' in parsed[0] && 'text' in parsed[0]) {
+                        // Format baru, gunakan langsung
+                        chatHistory = parsed;
+                    } else if (Array.isArray(parsed[0]) && parsed[0].length === 2) {
+                        // Format lama [sender, text], konversi ke format baru
+                        console.warn("Mengonversi format riwayat lama ke format baru.");
+                        chatHistory = parsed.map(([sender, text]) => ({ sender, text }));
+                        // Simpan kembali dalam format baru
+                        localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
+                    } else {
+                        // Format tidak dikenal, reset
+                        console.warn("Format chatHistory tidak dikenal, mengatur ulang.");
+                        localStorage.removeItem('chatHistory');
+                    }
+                } else {
+                    // Bukan array, reset
+                    console.warn("chatHistory bukan array, mengatur ulang.");
+                    localStorage.removeItem('chatHistory');
+                }
+            } catch (e) {
+                console.error("Gagal menguraikan chatHistory dari localStorage:", e);
+                localStorage.removeItem('chatHistory');
+            }
+        }
+        // Jika tidak ada atau salah format, chatHistory tetap array kosong
+
         const API_URL = 'https://rag-app-763926970161.asia-southeast2.run.app/chat    ';
 
         const chatMessagesElement = document.getElementById('chatMessages');
@@ -606,7 +640,7 @@
             chatMessagesElement.scrollTop = chatMessagesElement.scrollHeight;
         }
 
-        // Fungsi untuk memuat riwayat ke UI dari array chatHistory
+        // Fungsi untuk memuat riwayat ke UI dari array chatHistory (format object)
         function loadChatHistoryToUI() {
             // Bersihkan UI chat sebelum memuat ulang
             chatMessagesElement.innerHTML = '';
@@ -619,9 +653,9 @@
             }
 
             // Tambahkan setiap pesan dari riwayat ke UI
-            chatHistory.forEach(([sender, text]) => {
-                // Karena kita menyimpannya sebagai [sender, text], kita bisa langsung menggunakannya
-                addMessageToUI(sender, text);
+            chatHistory.forEach((item) => {
+                // Karena kita menyimpannya sebagai {sender: "...", text: "..."}, kita bisa langsung menggunakannya
+                addMessageToUI(item.sender, item.text);
             });
         }
 
@@ -692,17 +726,18 @@
             sendButton.disabled = true;
 
             try {
-                // Tambahkan pesan user ke riwayat dan UI
-                chatHistory.push(['user', message]);
-                addMessageToUI('user', message);
-                // Simpan riwayat ke localStorage setelah menambahkan pesan user
+                // Tambahkan pesan user ke riwayat (format object) dan UI
+                const userMessageObj = { sender: 'user', text: message };
+                chatHistory.push(userMessageObj);
+                addMessageToUI(userMessageObj.sender, userMessageObj.text);
+                // Simpan riwayat ke localStorage setelah menambahkan pesan user (format object)
                 localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
                 showTypingIndicator();
 
                 const response = await fetch(API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ user_query: message, history: chatHistory }),
+                    body: JSON.stringify({ user_query: message, history: chatHistory }), // Kirim dalam format object
                 });
 
                 if (!response.ok) {
@@ -717,12 +752,12 @@
                 }
 
                 const botResponse = data.response;
-                const updatedHistory = data.new_history;
+                const updatedHistory = data.new_history; // Harusnya sudah dalam format object
 
                 hideTypingIndicator();
-                // Gunakan riwayat yang diperbarui dari server
+                // Gunakan riwayat yang diperbarui dari server (format object)
                 chatHistory = updatedHistory;
-                // Simpan riwayat terbaru ke localStorage
+                // Simpan riwayat terbaru ke localStorage (format object)
                 localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
                 // Tambahkan respons bot ke UI
                 addMessageToUI('bot', botResponse);
