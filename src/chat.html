@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>BPS RAG Chatbot</title>
+    <title>Smart Callendar BPS</title>
     <style>
         :root {
             /* Palet Warna Modern & Profesional */
@@ -551,7 +551,7 @@
         </div>
 
         <div id="chatMessages" class="chat-messages">
-            <div class="chat-bubble bot"> Halo! Saya adalah chatbot BPS. Silakan ajukan pertanyaan Anda. </div>
+            <!-- Pesan akan ditambahkan secara dinamis oleh JavaScript -->
         </div>
 
         <form id="llmForm" class="chat-form">
@@ -566,7 +566,7 @@
         <div id="error-display" class="error-message"></div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js  "></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script>
         // --- Theme Toggle Logic ---
         const themeToggle = document.getElementById('themeToggle');
@@ -586,14 +586,16 @@
         });
 
         // --- Chat Logic ---
+        // Muat riwayat dari localStorage saat halaman dimuat
         let chatHistory = JSON.parse(localStorage.getItem('chatHistory')) || [];
-        const API_URL = 'https://rag-app-763926970161.asia-southeast2.run.app/chat  ';
+        const API_URL = 'https://rag-app-763926970161.asia-southeast2.run.app/chat';
 
         const chatMessagesElement = document.getElementById('chatMessages');
         const llmFormElement = document.getElementById('llmForm');
         const llmInputElement = document.getElementById('llmInput');
         const errorDisplayElement = document.getElementById('error-display');
 
+        // Fungsi untuk menambahkan pesan ke UI dan menyimpan ke localStorage
         function addMessageToUI(sender, text) {
             const messageDiv = document.createElement('div');
             messageDiv.classList.add('chat-bubble');
@@ -604,6 +606,35 @@
             chatMessagesElement.appendChild(messageDiv);
             chatMessagesElement.scrollTop = chatMessagesElement.scrollHeight;
         }
+
+        // Fungsi untuk menyimpan riwayat ke localStorage
+        function saveChatHistory() {
+            try {
+                localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
+            } catch (e) {
+                console.error("Gagal menyimpan riwayat ke localStorage:", e);
+                // Tidak menampilkan error ke user untuk ini, hanya log
+            }
+        }
+
+        // Fungsi untuk memuat riwayat ke UI dari array chatHistory
+        function loadChatHistoryToUI() {
+            // Bersihkan UI chat sebelum memuat ulang
+            chatMessagesElement.innerHTML = '';
+            // Tambahkan pesan default jika tidak ada riwayat
+            if (chatHistory.length === 0) {
+                 addMessageToUI('bot', ' Halo! Saya adalah chatbot BPS. Silakan ajukan pertanyaan Anda. ');
+                 return; // Jangan tambahkan lagi setelah ini
+            }
+
+            // Tambahkan setiap pesan dari riwayat ke UI
+            chatHistory.forEach(([sender, text]) => {
+                addMessageToUI(sender, text);
+            });
+        }
+
+        // Muat riwayat ke UI saat halaman dimuat
+        loadChatHistoryToUI();
 
         // Typing sequence variables
         const typingSteps = [
@@ -669,13 +700,16 @@
             sendButton.disabled = true;
 
             try {
+                // Tambahkan pesan user ke riwayat dan UI
+                chatHistory.push(['user', message]);
                 addMessageToUI('user', message);
+                saveChatHistory(); // Simpan setelah menambahkan pesan user
                 showTypingIndicator();
 
                 const response = await fetch(API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ user_query: message, history: chatHistory }),
+                    body: JSON.stringify({ user_query: message, history: chatHistory }), // Kirim riwayat ke API
                 });
 
                 if (!response.ok) {
@@ -690,13 +724,13 @@
                 }
 
                 const botResponse = data.response;
-                const updatedHistory = data.new_history;
+                const updatedHistory = data.new_history; // Gunakan riwayat yang diperbarui dari server
 
                 hideTypingIndicator();
-                addMessageToUI('bot', botResponse);
-
+                // Gunakan riwayat yang diperbarui dari server
                 chatHistory = updatedHistory;
-                localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
+                saveChatHistory(); // Simpan riwayat terbaru
+                addMessageToUI('bot', botResponse); // Tambahkan respons bot ke UI
 
             } catch (error) {
                 console.error("Error sending message:", error);
@@ -704,7 +738,6 @@
                 showError(`Gagal mengirim pesan: ${error.message}`);
             } finally {
                 sendButton.disabled = false;
-                // keep input cleared (already cleared above) and reset height to auto
                 llmInputElement.style.height = 'auto';
             }
         }
@@ -722,6 +755,23 @@
         llmInputElement.addEventListener('input', function () {
             this.style.height = 'auto';
             this.style.height = (this.scrollHeight) + 'px';
+        });
+
+        // --- Tambahkan Event Listener untuk Tab Visibility ---
+        // Ini akan memastikan bahwa riwayat tetap disimpan bahkan jika tab tidak aktif
+        document.addEventListener('visibilitychange', function() {
+            if (document.visibilityState === 'hidden') {
+                // Simpan riwayat saat tab menjadi tidak terlihat (misalnya, pindah tab)
+                saveChatHistory();
+            }
+            // Tidak perlu memuat ulang secara otomatis saat kembali terlihat,
+            // karena riwayat sudah dimuat di awal dan akan tetap di UI selama sesi berlangsung.
+        });
+
+        // Opsi tambahan: Simpan riwayat saat window sebelum ditutup/unload
+        window.addEventListener('beforeunload', function(e) {
+            saveChatHistory();
+            // Tidak perlu mengembalikan nilai untuk mencegah unload
         });
     </script>
 </body>
