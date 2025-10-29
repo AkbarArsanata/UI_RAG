@@ -587,7 +587,28 @@
 
         // --- Chat Logic ---
         // Muat riwayat dari localStorage saat halaman dimuat
-        let chatHistory = JSON.parse(localStorage.getItem('chatHistory')) || [];
+        let rawStoredHistory = localStorage.getItem('chatHistory');
+        let chatHistory = [];
+
+        if (rawStoredHistory) {
+            try {
+                const parsed = JSON.parse(rawStoredHistory);
+                // Validasi: pastikan itu array dan setiap item adalah array [sender, text]
+                if (Array.isArray(parsed) && parsed.every(item => Array.isArray(item) && item.length === 2 && typeof item[0] === 'string' && typeof item[1] === 'string')) {
+                    chatHistory = parsed;
+                } else {
+                    console.warn("Format chatHistory di localStorage salah, mengatur ulang.");
+                    // Jika format salah, reset localStorage dan gunakan array kosong
+                    localStorage.removeItem('chatHistory');
+                }
+            } catch (e) {
+                console.error("Gagal menguraikan chatHistory dari localStorage:", e);
+                // Jika parsing gagal, reset localStorage dan gunakan array kosong
+                localStorage.removeItem('chatHistory');
+            }
+        }
+        // Jika tidak ada atau salah format, chatHistory tetap array kosong
+
         const API_URL = 'https://rag-app-763926970161.asia-southeast2.run.app/chat      ';
 
         const chatMessagesElement = document.getElementById('chatMessages');
@@ -629,16 +650,8 @@
 
             // Tambahkan setiap pesan dari riwayat ke UI
             chatHistory.forEach(([sender, text]) => {
-                // Pastikan elemen adalah array dengan dua nilai
-                if (Array.isArray(sender) && text === undefined) {
-                    // Jika formatnya adalah [ [sender, text], ... ] maka ambil sender dan text
-                    [sender, text] = sender;
-                }
-                if (typeof sender === 'string' && typeof text === 'string') {
-                     addMessageToUI(sender, text);
-                } else {
-                    console.warn("Format pesan tidak valid dalam chatHistory:", [sender, text]);
-                }
+                // Karena kita sudah memvalidasi di awal, kita bisa yakin formatnya benar
+                addMessageToUI(sender, text);
             });
         }
 
