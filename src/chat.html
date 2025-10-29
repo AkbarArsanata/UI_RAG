@@ -277,7 +277,7 @@
             border-color: var(--user-bubble-border);
             /* Gunakan border user */
             border-bottom-right-radius: 6px;
-            /* Sudut unak */
+            /* Sudut unik */
         }
 
         .chat-bubble.bot {
@@ -551,7 +551,7 @@
         </div>
 
         <div id="chatMessages" class="chat-messages">
-            <!-- Pesan akan ditambahkan secara dinamis -->
+            <div class="chat-bubble bot"> Halo! Saya adalah chatbot BPS. Silakan ajukan pertanyaan Anda. </div>
         </div>
 
         <form id="llmForm" class="chat-form">
@@ -566,7 +566,7 @@
         <div id="error-display" class="error-message"></div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js    "></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js  "></script>
     <script>
         // --- Theme Toggle Logic ---
         const themeToggle = document.getElementById('themeToggle');
@@ -586,38 +586,8 @@
         });
 
         // --- Chat Logic ---
-        // Muat riwayat dari localStorage saat halaman dimuat
-        // Konversi format lama ke format baru {query: "...", id_map: "..."} jika perlu
-        let rawStoredHistory = localStorage.getItem('chatHistory');
-        let chatHistory = [];
-
-        if (rawStoredHistory) {
-            try {
-                const parsed = JSON.parse(rawStoredHistory);
-                if (Array.isArray(parsed)) {
-                    // Cek apakah formatnya adalah array object {query, id_map}
-                    if (parsed.length > 0 && typeof parsed[0] === 'object' && parsed[0] !== null && 'query' in parsed[0] && 'id_map' in parsed[0]) {
-                        // Format baru API, gunakan langsung
-                        chatHistory = parsed;
-                    } else {
-                        // Format lama (dari percobaan sebelumnya), reset
-                        console.warn("Format chatHistory lama ditemukan, mengatur ulang.");
-                        localStorage.removeItem('chatHistory');
-                        // chatHistory tetap kosong
-                    }
-                } else {
-                    // Bukan array, reset
-                    console.warn("chatHistory bukan array, mengatur ulang.");
-                    localStorage.removeItem('chatHistory');
-                }
-            } catch (e) {
-                console.error("Gagal menguraikan chatHistory dari localStorage:", e);
-                localStorage.removeItem('chatHistory');
-            }
-        }
-        // Jika tidak ada atau salah format, chatHistory tetap array kosong
-
-        const API_URL = 'https://rag-app-763926970161.asia-southeast2.run.app/chat    ';
+        let chatHistory = JSON.parse(localStorage.getItem('chatHistory')) || [];
+        const API_URL = 'https://rag-app-763926970161.asia-southeast2.run.app/chat  ';
 
         const chatMessagesElement = document.getElementById('chatMessages');
         const llmFormElement = document.getElementById('llmForm');
@@ -634,110 +604,6 @@
             chatMessagesElement.appendChild(messageDiv);
             chatMessagesElement.scrollTop = chatMessagesElement.scrollHeight;
         }
-
-        // Fungsi untuk memuat riwayat ke UI dari array chatHistory (format API object)
-        function loadChatHistoryToUI() {
-            // Bersihkan UI chat sebelum memuat ulang
-            chatMessagesElement.innerHTML = '';
-
-            // Tambahkan pesan default jika tidak ada riwayat
-            if (chatHistory.length === 0) {
-                 // Hanya tambahkan pesan bot default jika tidak ada riwayat sebelumnya
-                 addMessageToUI('bot', ' Halo! Saya adalah chatbot BPS. Silakan ajukan pertanyaan Anda. ');
-                 return; // Jangan tambahkan lagi setelah ini
-            }
-
-            // Tambahkan setiap pesan dari riwayat ke UI
-            // Kita asumsikan bahwa setiap item dalam chatHistory memiliki struktur {query: "...", id_map: "..."}
-            // Untuk menampilkan, kita ambil query-nya. Kita perlu tahu apakah query itu dari user atau bot.
-            // Karena struktur API history tidak menyertakan label pengirim secara eksplisit,
-            // kita asumsikan bahwa urutan adalah User -> Bot -> User -> Bot, dst.
-            // Atau, kita hanya menambahkan pesan bot dari history ke UI, karena pesan user akan muncul saat dikirim.
-            // Cara paling aman: hanya tampilkan pesan bot dari history. Pesan user akan ditampilkan saat dikirim.
-            // Namun, jika history menyertakan pesan user, kita bisa tampilkan juga, tapi perlu label.
-            // Mari kita coba tampilkan semua dari history, dengan asumsi formatnya benar dan hanya berisi query/id_map.
-            // Tapi kita tidak bisa tahu pengirimnya secara pasti dari history API.
-            // Mari kita tampilkan hanya pesan bot dari history, dan pesan user ditampilkan saat dikirim.
-            // Atau, kita tampilkan semua query dari history sebagai "user" dan "bot" bergantian.
-            // Kita gunakan pendekatan sederhana: tampilkan semua query dari history sebagai pesan "user" dan "bot" secara bergantian.
-            // Tapi ini tidak akurat. Lebih baik, kita tampilkan pesan bot dari history (jika ada) dan pesan user ditampilkan saat dikirim.
-            // Mari kita asumsikan bahwa setiap pasangan (query, id_map) di history adalah dari user dan responsnya dari bot.
-            // Tapi API mengembalikan history dan response terpisah.
-            // Mari kita ikuti alur aslinya: tampilkan pesan bot default jika history kosong, dan tambahkan pesan saat dikirim/diterima.
-            // Kita *bisa* menampilkan history, tapi kita butuh cara untuk mengetahui pengirimnya.
-            // Misalnya, kita simpan di localStorage dalam format {sender, text} dan saat mengirim ke API, kita konversi ke {query, id_map}.
-            // Ini adalah pendekatan terbaik agar UI bisa menampilkan dengan benar dan API bisa menerima format yang benar.
-            // Jadi, ubah struktur chatHistory lokal menjadi array {sender, text}, tapi saat kirim ke API, ubah ke {query, id_map}.
-
-            // --- STRUKTUR BARU UNTUK chatHistory LOkal ---
-            // chatHistory = [{ sender: 'user', text: 'pesan1' }, { sender: 'bot', text: 'pesan2' }, ...]
-
-            // Karena kita sudah menginisialisasi chatHistory di atas dengan format API (baru), dan jika formatnya benar,
-            // kita bisa mengkonversinya ke format UI lokal.
-            // Jika formatnya bukan API (karena kita reset), maka chatHistory kosong.
-            // Mari kita konversi dari format API (jika ada) ke format UI lokal.
-            const uiHistory = chatHistory.map(item => {
-                // Kita asumsikan item dari API adalah query dari user.
-                // Respons bot tidak disimpan dalam history yang dikirim, tapi dalam field 'response'.
-                // Jadi history API hanya berisi query user.
-                // Kita tampilkan query user dan respons bot secara bergantian.
-                // Tapi kita tidak punya respons bot di dalam history API.
-                // Kita *bisa* menyimpannya secara terpisah, atau menggabungkannya.
-                // Pendekatan terbaik: Simpan lokal dalam format {sender, text}, kirim ke API dalam format {query, id_map} (hanya query user).
-                // Jadi, jika ada history dari API, itu adalah query user. Kita konversi ke format lokal.
-                // Tapi API history juga berisi id_map. Kita bisa abaikan id_map saat menampilkan ke UI.
-                // Mari kita reset pendekatan.
-            });
-
-            // Karena struktur API history tidak cocok 1:1 dengan UI chat (yang perlu sender), kita kembali ke pendekatan sebelumnya:
-            // Simpan lokal dalam format {sender, text}, konversi saat kirim.
-
-            // Tapi, kita harus mengikuti struktur API saat mengirim.
-            // Jadi, kita buat dua representasi:
-            // 1. `localChatHistory`: Array {sender, text} untuk UI.
-            // 2. `apiHistory`: Array {query, id_map} untuk dikirim ke API.
-
-            // Saat halaman dimuat, kita baca dari localStorage ke `localChatHistory`.
-            // Kita konversi ke `apiHistory` hanya saat mengirim.
-            // Saat menerima respons, kita update `localChatHistory` dan simpan ke localStorage.
-
-            // Inisialisasi `localChatHistory` dari localStorage
-            let localChatHistory = [];
-            let rawStoredLocalHistory = localStorage.getItem('localChatHistory');
-            if (rawStoredLocalHistory) {
-                try {
-                    const parsedLocal = JSON.parse(rawStoredLocalHistory);
-                    if (Array.isArray(parsedLocal) && parsedLocal.every(item => typeof item === 'object' && item !== null && 'sender' in item && 'text' in item)) {
-                         localChatHistory = parsedLocal;
-                    } else {
-                         console.warn("Format localChatHistory salah, mengatur ulang.");
-                         localStorage.removeItem('localChatHistory');
-                    }
-                } catch (e) {
-                    console.error("Gagal parsing localChatHistory:", e);
-                    localStorage.removeItem('localChatHistory');
-                }
-            }
-
-            // Konversi localChatHistory ke format API (hanya ambil query user)
-            // API hanya butuh query user, bukan respons bot, dalam history.
-            // Format API history: [{query: "...", id_map: "..."}, ...] - hanya query user sebelumnya
-            // Kita buat id_map kosong untuk query user baru.
-            const apiHistoryForDisplay = localChatHistory.filter(msg => msg.sender === 'user').map(msg => ({ query: msg.text, id_map: "" }));
-
-            // Tampilkan localChatHistory ke UI
-            if (localChatHistory.length === 0) {
-                 addMessageToUI('bot', ' Halo! Saya adalah chatbot BPS. Silakan ajukan pertanyaan Anda. ');
-            } else {
-                localChatHistory.forEach(msg => {
-                    addMessageToUI(msg.sender, msg.text);
-                });
-            }
-
-        }
-
-        // Muat riwayat ke UI saat halaman dimuat
-        loadChatHistoryToUI();
 
         // Typing sequence variables
         const typingSteps = [
@@ -802,43 +668,14 @@
             const sendButton = llmFormElement.querySelector('button[type="submit"]');
             sendButton.disabled = true;
 
-            // Inisialisasi localChatHistory jika belum ada di fungsi ini
-            let localChatHistory = [];
-            let rawStoredLocalHistory = localStorage.getItem('localChatHistory');
-            if (rawStoredLocalHistory) {
-                try {
-                    const parsedLocal = JSON.parse(rawStoredLocalHistory);
-                    if (Array.isArray(parsedLocal) && parsedLocal.every(item => typeof item === 'object' && item !== null && 'sender' in item && 'text' in item)) {
-                         localChatHistory = parsedLocal;
-                    } else {
-                         // Jika format salah, reset
-                         localChatHistory = [];
-                         localStorage.removeItem('localChatHistory');
-                    }
-                } catch (e) {
-                    console.error("Gagal parsing localChatHistory di sendMessage:", e);
-                    localChatHistory = [];
-                    localStorage.removeItem('localChatHistory');
-                }
-            }
-
             try {
-                // Tambahkan pesan user ke localChatHistory dan UI
-                localChatHistory.push({ sender: 'user', text: message });
                 addMessageToUI('user', message);
-
-                // Konversi localChatHistory ke format API hanya untuk query user
-                const apiHistory = localChatHistory.filter(msg => msg.sender === 'user').map(msg => ({ query: msg.text, id_map: "" }));
-
-                // Simpan localChatHistory ke localStorage (format UI)
-                localStorage.setItem('localChatHistory', JSON.stringify(localChatHistory));
-
                 showTypingIndicator();
 
                 const response = await fetch(API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ user_query: message, history: apiHistory }), // Kirim dalam format API
+                    body: JSON.stringify({ user_query: message, history: chatHistory }),
                 });
 
                 if (!response.ok) {
@@ -853,17 +690,13 @@
                 }
 
                 const botResponse = data.response;
-                // new_history dari API adalah array {query, id_map} dari query user sebelumnya
-                // kita tidak menggunakannya secara langsung untuk menambahkan pesan bot ke UI
-                // pesan bot adalah 'response'
+                const updatedHistory = data.new_history;
 
                 hideTypingIndicator();
-                // Tambahkan respons bot ke localChatHistory dan UI
-                localChatHistory.push({ sender: 'bot', text: botResponse });
-                // Simpan kembali localChatHistory ke localStorage (format UI)
-                localStorage.setItem('localChatHistory', JSON.stringify(localChatHistory));
-                // Tambahkan respons bot ke UI
                 addMessageToUI('bot', botResponse);
+
+                chatHistory = updatedHistory;
+                localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
 
             } catch (error) {
                 console.error("Error sending message:", error);
@@ -871,6 +704,7 @@
                 showError(`Gagal mengirim pesan: ${error.message}`);
             } finally {
                 sendButton.disabled = false;
+                // keep input cleared (already cleared above) and reset height to auto
                 llmInputElement.style.height = 'auto';
             }
         }
