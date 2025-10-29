@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Smart Callendar BPS</title>
+    <title>BPS RAG Chatbot</title>
     <style>
         :root {
             /* Palet Warna Modern & Profesional */
@@ -621,6 +621,14 @@
         function loadChatHistoryToUI() {
             // Bersihkan UI chat sebelum memuat ulang
             chatMessagesElement.innerHTML = '';
+
+            // Validasi dan perbaiki format chatHistory sebelum iterasi
+            if (!Array.isArray(chatHistory)) {
+                console.warn("chatHistory bukan array, mengatur ulang ke array kosong.");
+                chatHistory = [];
+                localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
+            }
+
             // Tambahkan pesan default jika tidak ada riwayat
             if (chatHistory.length === 0) {
                  addMessageToUI('bot', ' Halo! Saya adalah chatbot BPS. Silakan ajukan pertanyaan Anda. ');
@@ -629,7 +637,16 @@
 
             // Tambahkan setiap pesan dari riwayat ke UI
             chatHistory.forEach(([sender, text]) => {
-                addMessageToUI(sender, text);
+                // Pastikan elemen adalah array dengan dua nilai
+                if (Array.isArray(sender) && text === undefined) {
+                    // Jika formatnya adalah [ [sender, text], ... ] maka ambil sender dan text
+                    [sender, text] = sender;
+                }
+                if (typeof sender === 'string' && typeof text === 'string') {
+                     addMessageToUI(sender, text);
+                } else {
+                    console.warn("Format pesan tidak valid dalam chatHistory:", [sender, text]);
+                }
             });
         }
 
@@ -746,7 +763,7 @@
 
         llmInputElement.addEventListener('keydown', function (event) {
             if (event.key === 'Enter' && !event.shiftKey) {
-                event.preventDefault();
+                event.preventDefault(); // Mencegah baris baru pada textarea
                 sendMessage(event);
             }
         });
