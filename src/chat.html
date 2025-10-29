@@ -551,7 +551,7 @@
         </div>
 
         <div id="chatMessages" class="chat-messages">
-            <div class="chat-bubble bot"> Halo! Saya adalah chatbot BPS. Silakan ajukan pertanyaan Anda. </div>
+            <!-- Pesan akan ditambahkan secara dinamis -->
         </div>
 
         <form id="llmForm" class="chat-form">
@@ -566,7 +566,7 @@
         <div id="error-display" class="error-message"></div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js  "></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js    "></script>
     <script>
         // --- Theme Toggle Logic ---
         const themeToggle = document.getElementById('themeToggle');
@@ -586,8 +586,9 @@
         });
 
         // --- Chat Logic ---
+        // Muat riwayat dari localStorage saat halaman dimuat
         let chatHistory = JSON.parse(localStorage.getItem('chatHistory')) || [];
-        const API_URL = 'https://rag-app-763926970161.asia-southeast2.run.app/chat  ';
+        const API_URL = 'https://rag-app-763926970161.asia-southeast2.run.app/chat    ';
 
         const chatMessagesElement = document.getElementById('chatMessages');
         const llmFormElement = document.getElementById('llmForm');
@@ -604,6 +605,28 @@
             chatMessagesElement.appendChild(messageDiv);
             chatMessagesElement.scrollTop = chatMessagesElement.scrollHeight;
         }
+
+        // Fungsi untuk memuat riwayat ke UI dari array chatHistory
+        function loadChatHistoryToUI() {
+            // Bersihkan UI chat sebelum memuat ulang
+            chatMessagesElement.innerHTML = '';
+
+            // Tambahkan pesan default jika tidak ada riwayat
+            if (chatHistory.length === 0) {
+                 // Hanya tambahkan pesan bot default jika tidak ada riwayat sebelumnya
+                 addMessageToUI('bot', ' Halo! Saya adalah chatbot BPS. Silakan ajukan pertanyaan Anda. ');
+                 return; // Jangan tambahkan lagi setelah ini
+            }
+
+            // Tambahkan setiap pesan dari riwayat ke UI
+            chatHistory.forEach(([sender, text]) => {
+                // Karena kita menyimpannya sebagai [sender, text], kita bisa langsung menggunakannya
+                addMessageToUI(sender, text);
+            });
+        }
+
+        // Muat riwayat ke UI saat halaman dimuat
+        loadChatHistoryToUI();
 
         // Typing sequence variables
         const typingSteps = [
@@ -669,7 +692,11 @@
             sendButton.disabled = true;
 
             try {
+                // Tambahkan pesan user ke riwayat dan UI
+                chatHistory.push(['user', message]);
                 addMessageToUI('user', message);
+                // Simpan riwayat ke localStorage setelah menambahkan pesan user
+                localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
                 showTypingIndicator();
 
                 const response = await fetch(API_URL, {
@@ -693,10 +720,12 @@
                 const updatedHistory = data.new_history;
 
                 hideTypingIndicator();
-                addMessageToUI('bot', botResponse);
-
+                // Gunakan riwayat yang diperbarui dari server
                 chatHistory = updatedHistory;
+                // Simpan riwayat terbaru ke localStorage
                 localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
+                // Tambahkan respons bot ke UI
+                addMessageToUI('bot', botResponse);
 
             } catch (error) {
                 console.error("Error sending message:", error);
@@ -704,7 +733,6 @@
                 showError(`Gagal mengirim pesan: ${error.message}`);
             } finally {
                 sendButton.disabled = false;
-                // keep input cleared (already cleared above) and reset height to auto
                 llmInputElement.style.height = 'auto';
             }
         }
