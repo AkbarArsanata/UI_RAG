@@ -547,11 +547,11 @@
                     <rect x="8" y="8" width="8" height="8" rx="4" fill="currentColor" />
                 </svg>
             </span>
-            <span class="chat-title">Smart Callendar BPS</span>
+            <span class="chat-title">BPS Chatbot</span>
         </div>
 
         <div id="chatMessages" class="chat-messages">
-            <!-- Pesan akan ditambahkan secara dinamis oleh JavaScript -->
+            <!-- Pesan akan ditambahkan secara dinamis -->
         </div>
 
         <form id="llmForm" class="chat-form">
@@ -566,7 +566,7 @@
         <div id="error-display" class="error-message"></div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js      "></script>
     <script>
         // --- Theme Toggle Logic ---
         const themeToggle = document.getElementById('themeToggle');
@@ -588,7 +588,7 @@
         // --- Chat Logic ---
         // Muat riwayat dari localStorage saat halaman dimuat
         let chatHistory = JSON.parse(localStorage.getItem('chatHistory')) || [];
-        const API_URL = 'https://rag-app-763926970161.asia-southeast2.run.app/chat';
+        const API_URL = 'https://rag-app-763926970161.asia-southeast2.run.app/chat      ';
 
         const chatMessagesElement = document.getElementById('chatMessages');
         const llmFormElement = document.getElementById('llmForm');
@@ -613,7 +613,6 @@
                 localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
             } catch (e) {
                 console.error("Gagal menyimpan riwayat ke localStorage:", e);
-                // Tidak menampilkan error ke user untuk ini, hanya log
             }
         }
 
@@ -621,13 +620,6 @@
         function loadChatHistoryToUI() {
             // Bersihkan UI chat sebelum memuat ulang
             chatMessagesElement.innerHTML = '';
-
-            // Validasi dan perbaiki format chatHistory sebelum iterasi
-            if (!Array.isArray(chatHistory)) {
-                console.warn("chatHistory bukan array, mengatur ulang ke array kosong.");
-                chatHistory = [];
-                localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
-            }
 
             // Tambahkan pesan default jika tidak ada riwayat
             if (chatHistory.length === 0) {
@@ -726,7 +718,7 @@
                 const response = await fetch(API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ user_query: message, history: chatHistory }), // Kirim riwayat ke API
+                    body: JSON.stringify({ user_query: message, history: chatHistory }),
                 });
 
                 if (!response.ok) {
@@ -741,7 +733,7 @@
                 }
 
                 const botResponse = data.response;
-                const updatedHistory = data.new_history; // Gunakan riwayat yang diperbarui dari server
+                const updatedHistory = data.new_history;
 
                 hideTypingIndicator();
                 // Gunakan riwayat yang diperbarui dari server
@@ -763,7 +755,7 @@
 
         llmInputElement.addEventListener('keydown', function (event) {
             if (event.key === 'Enter' && !event.shiftKey) {
-                event.preventDefault(); // Mencegah baris baru pada textarea
+                event.preventDefault();
                 sendMessage(event);
             }
         });
@@ -788,7 +780,6 @@
         // Opsi tambahan: Simpan riwayat saat window sebelum ditutup/unload
         window.addEventListener('beforeunload', function(e) {
             saveChatHistory();
-            // Tidak perlu mengembalikan nilai untuk mencegah unload
         });
     </script>
 </body>
